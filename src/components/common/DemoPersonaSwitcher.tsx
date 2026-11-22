@@ -8,7 +8,7 @@ export const DemoPersonaSwitcher: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
+    <div className="fixed bottom-5 left-5 z-40">
       {isOpen ? (
         <div className="bg-narmis-surface/98 backdrop-blur-xl border-2 border-narmis-gold/70 rounded-3xl p-5 shadow-2xl w-80 text-narmis-cream animate-fadeIn">
           <div className="flex items-center justify-between pb-3 border-b border-narmis-mountain/50 mb-3">

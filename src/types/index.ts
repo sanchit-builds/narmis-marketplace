@@ -25,6 +25,9 @@ export interface UserProfile {
   rating?: number;
   review_count?: number;
   joined_date?: string;
+  trade_trials_used?: number;
+  is_trade_subscribed?: boolean;
+  subscription_tier?: 'free' | 'pro' | 'elite';
 }
 
 export interface Listing {

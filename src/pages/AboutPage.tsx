@@ -106,7 +106,7 @@ export const AboutPage: React.FC = () => {
                 2. TRADE
               </h3>
               <p className="text-xs text-narmis-cream/75 leading-relaxed">
-                Our signature exchange mechanism. Barter item-for-item and bridge valuation gaps with
+                Our signature exchange mechanism. Barter item-for-item with 3 free trials, optional Trader Elite pass, and bridge valuation gaps with
                 transparent, agreed-upon cash adjustments.
               </p>
             </div>

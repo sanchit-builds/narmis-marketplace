@@ -6,6 +6,7 @@ import { ToastProvider } from './context/ToastContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { DemoPersonaSwitcher } from './components/common/DemoPersonaSwitcher';
+import { AiChatBot } from './components/common/AiChatBot';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -63,6 +64,7 @@ export function App() {
 
               <Footer />
               <DemoPersonaSwitcher />
+              <AiChatBot />
             </div>
           </ToastProvider>
         </MarketplaceProvider>

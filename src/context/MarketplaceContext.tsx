@@ -214,7 +214,10 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addListing = async (
     data: Omit<Listing, 'id' | 'user_id' | 'created_at' | 'view_count' | 'status'>
   ): Promise<Listing> => {
-    const newId = 'list-' + Date.now();
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : 'list-' + Date.now();
+
     const newListing: Listing = {
       ...data,
       id: newId,
@@ -246,6 +249,15 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
             status: 'active',
           },
         ]);
+
+        if (data.images && data.images.length > 0) {
+          const imageRows = data.images.map((imgUrl, idx) => ({
+            listing_id: newId,
+            image_url: imgUrl,
+            is_primary: idx === 0,
+          }));
+          await supabase.from('listing_images').insert(imageRows);
+        }
       } catch (e) {
         console.error('Supabase insert listing error:', e);
       }

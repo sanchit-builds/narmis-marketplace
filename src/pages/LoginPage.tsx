@@ -143,6 +143,11 @@ export const LoginPage: React.FC = () => {
             Create an Account
           </Link>
         </div>
+
+        <div className="mt-4 pt-4 border-t border-narmis-mountain/40 text-center flex items-center justify-center gap-1.5 text-[11px] text-emerald-400/90 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Supabase Online Auth • Real-Time Cloud Persistence</span>
+        </div>
       </div>
     </div>
   );

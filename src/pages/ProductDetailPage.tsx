@@ -408,6 +408,32 @@ export const ProductDetailPage: React.FC = () => {
                 )}
               </div>
 
+              {/* 10% Platform Margin Notice on items <= ₹1,000 */}
+              {(listing.purchase_price || listing.rental_price || listing.estimated_value || 0) <= 1000 && (
+                <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-600/40 text-xs text-amber-200/90 flex items-start gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-narmis-gold shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-narmis-parchment">10% Platform Protection Margin:</span>
+                    <p className="text-[11px] text-amber-200/80 mt-0.5">
+                      Items valued at ₹1,000 or below are protected with a 10% platform margin for peer escrow verification and fraud-free handover.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Trade Section Free Trials Indicator */}
+              {listing.listing_type === 'trade' && (
+                <div className="p-3 rounded-2xl bg-narmis-forestDark/80 border border-narmis-gold/30 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-narmis-parchment font-medium">
+                    <Repeat className="w-3.5 h-3.5 text-narmis-gold" />
+                    <span>3 Free Trade Trials Available</span>
+                  </span>
+                  <span className="text-[11px] text-amber-300 font-bold uppercase tracking-wider">
+                    {user?.is_trade_subscribed ? 'Elite Unlimited' : `${Math.max(0, 3 - (user?.trade_trials_used || 0))} Free Left`}
+                  </span>
+                </div>
+              )}
+
               {/* PRIMARY ACTION BUTTON MATCHING TYPE */}
               <div className="space-y-3">
                 {listing.listing_type === 'rent' && (

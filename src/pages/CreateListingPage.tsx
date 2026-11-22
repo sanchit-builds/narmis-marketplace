@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { useAuth } from '../context/AuthContext';
 import { ListingCategory, ListingCondition, ListingType } from '../types';
+import { uploadImageToSupabase } from '../services/storage';
+import { calculatePlatformMargin } from '../utils/marginCalculator';
 import {
   Upload,
   Calendar,
@@ -16,6 +18,9 @@ import {
   Eye,
   Camera,
   Star,
+  Cloud,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 
 const CATEGORIES: ListingCategory[] = [
@@ -81,27 +86,43 @@ export const CreateListingPage: React.FC = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Process a list of File objects into base64 data URLs
-  const processFiles = (fileList: FileList | File[]) => {
-    Array.from(fileList).forEach((file) => {
+  // Process a list of File objects and upload directly to Supabase Storage
+  const processFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    setIsUploadingImage(true);
+    setErrorMsg('');
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       if (!file.type.startsWith('image/')) {
         setErrorMsg('Only image files (JPG, PNG, WEBP) are supported.');
-        return;
+        continue;
       }
-      if (file.size > 8 * 1024 * 1024) {
-        setErrorMsg('Image size should be below 8MB.');
-        return;
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMsg('Image size should be below 10MB.');
+        continue;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          setImages((prev) => [...prev, reader.result as string]);
+
+      setUploadProgressText(`Uploading ${i + 1} of ${files.length} directly to Supabase Storage...`);
+      try {
+        const result = await uploadImageToSupabase(file);
+        if (result.url) {
+          setImages((prev) => [...prev, result.url]);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err: any) {
+        console.error('Image upload failed:', err);
+        setErrorMsg(err.message || 'Image upload error.');
+      }
+    }
+
+    setIsUploadingImage(false);
+    setUploadProgressText('');
   };
 
   // Handle local image file upload preview
@@ -453,6 +474,27 @@ export const CreateListingPage: React.FC = () => {
                       </select>
                     </div>
                   </div>
+
+                  {rentalPrice > 0 && (
+                    <div className="p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/40 space-y-1.5 text-xs">
+                      <div className="flex justify-between items-center text-sky-200">
+                        <span className="flex items-center gap-1 font-semibold">
+                          <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                          <span>NARMIS Margin ({calculatePlatformMargin(rentalPrice).marginPercentText}):</span>
+                        </span>
+                        <span className="font-bold">₹{calculatePlatformMargin(rentalPrice).platformMargin}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-emerald-300 font-bold pt-1 border-t border-sky-900/50">
+                        <span>Your Estimated Net Rate:</span>
+                        <span>₹{calculatePlatformMargin(rentalPrice).sellerPayout} / {rentalDuration.toLowerCase()}</span>
+                      </div>
+                      {rentalPrice <= 1000 && (
+                        <p className="text-[11px] text-sky-200/80 pt-0.5">
+                          🛡️ 10% platform margin applies to rentals ₹1,000 or below for equipment damage coverage.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -504,6 +546,16 @@ export const CreateListingPage: React.FC = () => {
                       className="w-full px-3 py-2.5 rounded-xl bg-narmis-forestDark border border-narmis-mountain/60 text-sm text-narmis-cream focus:outline-none focus:border-narmis-gold"
                     />
                   </div>
+
+                  {estimatedValue > 0 && estimatedValue <= 1000 && (
+                    <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-narmis-gold" />
+                        <span>NARMIS 10% Protection Margin Tier (Items ≤ ₹1,000)</span>
+                      </span>
+                      <span className="font-bold">10% Platform Escrow (₹{calculatePlatformMargin(estimatedValue).platformMargin})</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -527,6 +579,37 @@ export const CreateListingPage: React.FC = () => {
                       required
                     />
                   </div>
+
+                  {/* 10% Margin Breakdown Card */}
+                  {purchasePrice > 0 && (
+                    <div className="p-4 rounded-xl bg-narmis-forestDark/80 border border-narmis-gold/40 space-y-2 text-xs">
+                      <div className="flex justify-between text-narmis-cream/80">
+                        <span>Product Selling Price:</span>
+                        <span className="font-semibold text-narmis-parchment">₹{purchasePrice.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-amber-300">
+                        <span className="flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>NARMIS Platform Margin ({calculatePlatformMargin(purchasePrice).marginPercentText}):</span>
+                        </span>
+                        <span className="font-bold">- ₹{calculatePlatformMargin(purchasePrice).platformMargin.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="pt-2 border-t border-narmis-mountain/50 flex justify-between font-bold text-sm text-emerald-400">
+                        <span>Your Estimated Net Payout:</span>
+                        <span>₹{calculatePlatformMargin(purchasePrice).sellerPayout.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      {purchasePrice <= 1000 ? (
+                        <p className="text-[11px] text-amber-200/90 pt-1">
+                          🛡️ <strong>10% Margin Policy:</strong> For items ₹1,000 or below, NARMIS maintains a 10% platform margin to ensure full buyer escrow protection and safe peer pickup.
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-narmis-cream/60 pt-1">
+                          Standard 5% platform fee for items above ₹1,000.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -555,9 +638,23 @@ export const CreateListingPage: React.FC = () => {
           {/* STEP 3: Photos, Preview & Publish */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-fadeIn">
-              <h2 className="font-serif text-2xl font-bold text-narmis-parchment pb-3 border-b border-narmis-mountain/40">
-                Step 3: Upload Photos & Publish
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-narmis-mountain/40 gap-2">
+                <h2 className="font-serif text-2xl font-bold text-narmis-parchment">
+                  Step 3: Upload Photos & Publish
+                </h2>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-[11px] text-emerald-300">
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Supabase Online Storage Active</span>
+                </div>
+              </div>
+
+              {/* Uploading progress notification */}
+              {isUploadingImage && (
+                <div className="p-3.5 rounded-2xl bg-amber-950/60 border border-narmis-gold flex items-center justify-center gap-2 text-xs text-narmis-parchment animate-pulse shadow-lg">
+                  <Loader2 className="w-4 h-4 text-narmis-gold animate-spin" />
+                  <span>{uploadProgressText || 'Uploading directly to Supabase Storage...'}</span>
+                </div>
+              )}
 
               {/* Photo Upload Box */}
               <div>

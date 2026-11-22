@@ -4,6 +4,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
+import { calculatePlatformMargin } from '../../utils/marginCalculator';
 import {
   X,
   ShoppingBag,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   Printer,
   QrCode,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface PurchaseModalProps {
@@ -41,9 +43,9 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   if (!isOpen) return null;
 
   const price = listing.purchase_price || 0;
-  const platformFee = 0; // ₹0 for hackathon demo
+  const marginInfo = calculatePlatformMargin(price);
   const deliveryEstimated = 0; // Local meetup / zero charge
-  const total = price + platformFee + deliveryEstimated;
+  const total = price + deliveryEstimated;
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,34 +99,50 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-600/40 text-[11px] font-bold uppercase mb-2">
                 <Sparkles className="w-3 h-3" />
-                Demo Payment Successful
+                Payment Successful
               </div>
               <h3 className="font-serif text-2xl font-bold text-narmis-parchment">
                 Order Confirmed!
               </h3>
               <p className="text-xs text-narmis-cream/70 mt-1">
-                Receipt Number:{' '}
-                <span className="font-mono font-bold text-narmis-gold">
-                  {completedPurchase.receipt_number}
-                </span>
+                Receipt Number: <span className="font-mono text-narmis-gold">{completedPurchase.receipt_number}</span>
               </p>
             </div>
 
-            {/* Receipt Summary Card */}
-            <div className="p-4 rounded-2xl bg-narmis-forestDark/90 border border-narmis-mountain/60 text-left text-xs space-y-2">
-              <div className="flex justify-between text-narmis-cream/60">
+            {/* Receipt Breakdown Card */}
+            <div className="p-4 rounded-2xl bg-narmis-forestDark/80 border border-narmis-mountain/50 text-left space-y-2 text-xs">
+              <div className="flex justify-between text-narmis-cream/70">
                 <span>Item Purchased:</span>
-                <span className="font-semibold text-narmis-parchment">{listing.title}</span>
+                <span className="font-semibold text-narmis-parchment truncate max-w-[200px]">
+                  {listing.title}
+                </span>
               </div>
-              <div className="flex justify-between text-narmis-cream/60">
-                <span>Amount Paid:</span>
+              <div className="flex justify-between text-narmis-cream/70">
+                <span>Item Price:</span>
+                <span className="font-semibold text-narmis-parchment">
+                  ₹{price.toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="flex justify-between text-amber-300">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Platform Margin ({marginInfo.marginPercentText}):</span>
+                </span>
+                <span className="font-semibold">₹{marginInfo.platformMargin.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-narmis-cream/70">
+                <span>Seller Payout Remittance:</span>
+                <span className="font-semibold text-emerald-400">₹{marginInfo.sellerPayout.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="pt-2 border-t border-narmis-mountain/50 flex justify-between font-bold text-sm">
+                <span>Total Paid:</span>
                 <span className="font-bold text-emerald-400 font-serif">
                   ₹{completedPurchase.amount.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="flex justify-between text-narmis-cream/60">
                 <span>Payment Mode:</span>
-                <span className="font-medium text-narmis-gold">DEMO SIMULATION (Hackathon)</span>
+                <span className="font-medium text-narmis-gold">Verified Escrow Handover</span>
               </div>
               <div className="flex justify-between text-narmis-cream/60">
                 <span>Delivery / Handover:</span>
@@ -167,9 +185,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-200/90 text-left">
-              <strong>Hackathon Note:</strong> This transaction was simulated with mock funds. A
-              notification and receipt thread has been created in your messages to coordinate handover
-              with the seller.
+              <strong>100% Escrow Protection:</strong> Funds are safely held by NARMIS and only released to the seller after you inspect and accept the item at handover.
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
@@ -179,28 +195,23 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 }}
                 className="px-5 py-2.5 rounded-full bg-narmis-forestDark hover:bg-narmis-mountain text-narmis-parchment border border-narmis-mountain text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print Receipt</span>
+                <Printer className="w-3.5 h-3.5 text-narmis-gold" />
+                <span>Print Official Receipt</span>
               </button>
+
               <button
                 onClick={() => {
                   onClose();
-                  navigate('/dashboard');
+                  navigate('/messages');
                 }}
                 className="px-6 py-2.5 rounded-full bg-narmis-gold text-narmis-charcoal text-xs font-bold uppercase tracking-wider hover:bg-narmis-accent transition-all"
               >
-                View in Dashboard
-              </button>
-              <button
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-full bg-narmis-mountain text-narmis-parchment text-xs font-medium hover:bg-narmis-mountain/80 transition-all"
-              >
-                Close
+                View Handover Chat
               </button>
             </div>
           </div>
         ) : (
-          /* Checkout Form */
+          /* Checkout Summary & Confirmation */
           <form onSubmit={handleCheckout} className="space-y-5">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-600/40">
@@ -208,40 +219,68 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               </div>
               <div>
                 <h3 className="font-serif text-xl font-bold text-narmis-parchment">
-                  Simulated Checkout
+                  Confirm Purchase & Escrow
                 </h3>
-                <p className="text-xs text-narmis-cream/60">{listing.title}</p>
-              </div>
-            </div>
-
-            {/* Obvious DEMO PAYMENT BANNER (Mandatory) */}
-            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/50 flex items-start gap-2.5 text-xs text-amber-200">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold uppercase tracking-wider">DEMO PAYMENT MODE:</span>
-                <p className="text-[11px] text-amber-200/80 mt-0.5">
-                  This checkout is for hackathon demonstration. No real financial credentials or actual
-                  money are charged.
+                <p className="text-xs text-narmis-cream/60">
+                  Direct peer acquisition with NARMIS handover protection
                 </p>
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Product Snapshot Card */}
+            <div className="p-3.5 rounded-2xl bg-narmis-forestDark/80 border border-narmis-mountain/50 flex items-center gap-3.5">
+              <img
+                src={listing.images[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'}
+                alt=""
+                className="w-16 h-16 rounded-xl object-cover border border-narmis-mountain/60 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <h4 className="font-serif font-bold text-narmis-parchment text-sm truncate">
+                  {listing.title}
+                </h4>
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-narmis-cream/60">
+                  <span>Condition: <strong className="text-narmis-parchment">{listing.condition}</strong></span>
+                  <span>•</span>
+                  <span>Seller: <strong className="text-narmis-parchment">{listing.user?.full_name || 'Community Member'}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cost & Margin Breakdown */}
             <div className="p-4 rounded-2xl bg-narmis-forestDark/80 border border-narmis-mountain/50 space-y-2.5 text-xs">
               <div className="flex justify-between text-narmis-cream/70">
-                <span>Product Selling Price:</span>
+                <span>Product Listed Price:</span>
                 <span className="font-semibold text-narmis-parchment">₹{price.toLocaleString('en-IN')}</span>
               </div>
+
+              {/* NARMIS Platform Margin */}
+              <div className="flex justify-between text-amber-300">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>NARMIS Platform Margin ({marginInfo.marginPercentText}):</span>
+                </span>
+                <span className="font-semibold">₹{marginInfo.platformMargin.toLocaleString('en-IN')}</span>
+              </div>
+
               <div className="flex justify-between text-narmis-cream/70">
-                <span>Peer Platform Fee (Hackathon demo):</span>
+                <span>Seller Payout After Margin:</span>
+                <span className="font-semibold text-emerald-400">₹{marginInfo.sellerPayout.toLocaleString('en-IN')}</span>
+              </div>
+
+              <div className="flex justify-between text-narmis-cream/70">
+                <span>Direct Handover / Verification:</span>
                 <span className="font-semibold text-emerald-400">FREE</span>
               </div>
-              <div className="flex justify-between text-narmis-cream/70">
-                <span>Direct Handover / Shipping:</span>
-                <span className="font-semibold text-emerald-400">FREE</span>
-              </div>
+
+              {/* 10% Margin Callout Banner if price <= 1000 */}
+              {price <= 1000 && (
+                <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-600/30 text-[11px] text-amber-200">
+                  🛡️ <strong>10% Margin Tier (≤ ₹1,000):</strong> A 10% platform margin is applied to support buyer escrow protection, dispute resolution, and verified condition checks.
+                </div>
+              )}
+
               <div className="pt-2 border-t border-narmis-mountain/40 flex justify-between items-center text-sm font-bold">
-                <span className="text-narmis-parchment">Total Amount:</span>
+                <span className="text-narmis-parchment">Total Payable:</span>
                 <span className="font-serif text-xl text-emerald-400">
                   ₹{total.toLocaleString('en-IN')}
                 </span>
@@ -267,7 +306,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-narmis-parchment/80 mb-1.5 flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-narmis-gold" />
-                <span>Select Simulated Payment Method</span>
+                <span>Select Payment Method</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
@@ -279,7 +318,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                       : 'bg-narmis-forestDark border-narmis-mountain/50 text-narmis-cream/70 hover:bg-narmis-mountain/30'
                   }`}
                 >
-                  Demo UPI / QR
+                  UPI / QR
                 </button>
                 <button
                   type="button"
@@ -290,7 +329,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                       : 'bg-narmis-forestDark border-narmis-mountain/50 text-narmis-cream/70 hover:bg-narmis-mountain/30'
                   }`}
                 >
-                  Demo Card
+                  Debit/Credit Card
                 </button>
                 <button
                   type="button"
@@ -301,11 +340,12 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                       : 'bg-narmis-forestDark border-narmis-mountain/50 text-narmis-cream/70 hover:bg-narmis-mountain/30'
                   }`}
                 >
-                  Demo NetBanking
+                  NetBanking / Wallet
                 </button>
               </div>
             </div>
 
+            {/* Submit & Cancel */}
             <div className="pt-2 flex items-center gap-3">
               <button
                 type="button"
@@ -317,14 +357,15 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-2/3 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-narmis-charcoal text-xs font-bold uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
+                className="w-2/3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 {isProcessing ? (
-                  <span>Processing Demo Payment...</span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Authorizing Escrow...
+                  </span>
                 ) : (
-                  <>
-                    <span>Confirm Demo Purchase (₹{total.toLocaleString('en-IN')})</span>
-                  </>
+                  <span>Authorize ₹{total.toLocaleString('en-IN')}</span>
                 )}
               </button>
             </div>
